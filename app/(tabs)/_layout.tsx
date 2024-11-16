@@ -20,7 +20,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="product"
         options={{
-          tabBarIcon: ({ color }) => <Icon name="cube-outline" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Icon name="fast-food-outline" size={24} color={color} />,
           tabBarLabel: 'Product',
         }}
       />
