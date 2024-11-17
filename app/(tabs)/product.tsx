@@ -17,7 +17,7 @@ const ProductScreen: React.FC = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('http://192.168.1.127:8080/api/get-all-product?id=ALL'); // Tải tất cả sản phẩm
+        const response = await fetch('http://172.168.98.89:8080/api/get-all-product?id=ALL'); // Tải tất cả sản phẩm
         const data = await response.json();
         if (data.errCode === 0) {
           setProducts(data.products);

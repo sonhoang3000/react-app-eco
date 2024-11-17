@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { useNavigation } from 'expo-router';  // Đảm bảo dùng 'expo-router' nếu dùng Expo Router
+import { useNavigation } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 export default function HamburgerMenu() {
@@ -8,7 +8,6 @@ export default function HamburgerMenu() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuAnimation = useState(new Animated.Value(0))[0];
 
-  // Animation để mở/đóng menu
   const toggleMenu = () => {
     const toValue = isMenuOpen ? 0 : 1;
     Animated.spring(menuAnimation, {
@@ -20,7 +19,7 @@ export default function HamburgerMenu() {
 
   const menuTranslateX = menuAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [-250, 0],  // Chuyển menu từ bên trái vào
+    outputRange: [-250, 0], 
   });
 
   return (

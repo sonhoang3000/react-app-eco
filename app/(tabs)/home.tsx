@@ -3,6 +3,7 @@ import { View, Text, Image, TouchableOpacity, TextInput, FlatList, ActivityIndic
 import { useNavigation } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
 import HamburgerMenu from '../components/hmenu'; // Import HamburgerMenu
+import { addToCart, getCartByUserId, createNewCart } from '../../services/cartServices'; // Import các API của giỏ hàng
 
 const { width } = Dimensions.get('window');
 
@@ -19,12 +20,14 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [id, setId] = useState<string>('ALL');
+  const [cart, setCart] = useState<Product[]>([]); // Local state for the cart
   const [bannerIndex, setBannerIndex] = useState<number>(0);
+
+  const userId = "67308506ab02fadc827d50f2"; // ID người dùng (có thể lấy từ session hoặc Redux)
 
   const fetchProducts = async () => {
     try {
-      let response = await fetch(`http:/192.168.1.127:8080/api/get-all-product?id=${id}`);
+      let response = await fetch(`http://172.168.98.89:8080/api/get-all-product?id=ALL`);
       let data = await response.json();
       if (data.errCode === 0) {
         setProducts(data.products);
@@ -42,7 +45,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     fetchProducts();
-  }, [id]);
+  }, []);
 
   const handleSearch = (text: string) => {
     setSearchTerm(text);
@@ -56,12 +59,35 @@ export default function HomeScreen() {
     }
   };
 
-  const handleViewDetails = (item: Product) => {
-    // Your detail view navigation logic here
+  // Lấy giỏ hàng của người dùng
+  const fetchCart = async () => {
+    try {
+      const cartData = await getCartByUserId(userId);
+      setCart(cartData.data); // Giả sử API trả về giỏ hàng của người dùng
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+    }
   };
 
-  const handleAddToCart = (item: Product) => {
-    // Your add to cart logic here
+  useEffect(() => {
+    fetchCart(); // Gọi API để lấy giỏ hàng khi trang load
+  }, []);
+
+  const handleAddToCart = async (item: Product) => {
+    try {
+      // Kiểm tra nếu giỏ hàng đã có
+      if (cart && cart.length === 0) {
+        // Nếu giỏ hàng chưa có, tạo giỏ hàng mới
+        await createNewCart(userId);
+      }
+
+      // Thêm sản phẩm vào giỏ hàng
+      await addToCart(userId, item._id); // Sử dụng API để thêm sản phẩm vào giỏ hàng
+      setCart((prevCart) => [...prevCart, item]); // Cập nhật giỏ hàng trong state
+      navigation.navigate('cart'); // Chuyển đến màn hình giỏ hàng
+    } catch (error) {
+      console.error('Error adding product to cart:', error);
+    }
   };
 
   const renderProduct = ({ item }: { item: Product }) => (
@@ -70,7 +96,7 @@ export default function HomeScreen() {
       <Text style={styles.productName}>{item.name}</Text>
       <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.detailButton} onPress={() => handleViewDetails(item)}>
+        <TouchableOpacity style={styles.detailButton}>
           <Text style={styles.buttonText}>View Detail</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cartButton} onPress={() => handleAddToCart(item)}>
@@ -105,13 +131,13 @@ export default function HomeScreen() {
                 <TouchableOpacity onPress={() => navigation.navigate('account')}>
                   <Icon name="person-outline" size={30} color="black" />
                 </TouchableOpacity>
-              </View>
-
-              <View style={styles.locationContainer}>
-                <Text>📍Current Location</Text>
-                <Text>VietNam</Text>
-                <TouchableOpacity onPress={() => console.log('Notification clicked')}>
-                  <Icon name="notifications-outline" size={30} color="black" />
+                <TouchableOpacity onPress={() => navigation.navigate('cart')}>
+                  <Icon name="cart-outline" size={30} color="black" />
+                  {cart.length > 0 && (
+                    <View style={styles.cartBadge}>
+                      <Text style={styles.cartBadgeText}>{cart.length}</Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               </View>
 
@@ -138,16 +164,6 @@ export default function HomeScreen() {
                 contentContainerStyle={{ marginTop: 10 }}
               />
             </View>
-
-            <View style={styles.viewMoreContainer}>
-              <Text style={styles.sectionTitle}>More</Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('product')}
-                style={styles.viewMoreButton}
-              >
-                <Text style={styles.viewMoreText}>View More</Text>
-              </TouchableOpacity>
-            </View>
           </>
         }
         data={filteredProducts}
@@ -161,9 +177,6 @@ export default function HomeScreen() {
           ) : (
             <View style={{ padding: 16, alignItems: 'center' }}>
               <Text style={{ fontSize: 14, color: '#FFFFFF' }}>MEAT MEAL N11</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('account')}>
-                <Text style={{ color: '#005BBB', marginTop: 10 }}>Go to Account</Text>
-              </TouchableOpacity>
             </View>
           )
         }
@@ -175,22 +188,32 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',  // Căn giữa các phần tử theo chiều ngang
-    alignItems: 'center',      // Căn giữa các phần tử theo chiều dọc
-    width: '100%',             // Chiếm toàn bộ chiều rộng
-    paddingVertical: 20,       // Tạo khoảng cách cho phần header
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    paddingVertical: 20,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    textAlign: 'center',       // Căn giữa văn bản
-    flex: 1,                   // Làm cho tiêu đề chiếm hết không gian còn lại giữa các phần tử
+    textAlign: 'center',
+    flex: 1,
   },
-  locationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  cartBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 10
+  },
+  cartBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   searchInput: {
     borderWidth: 1,
@@ -200,15 +223,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   bannerContainer: {
-    width: '100%', 
-    height: 200, 
-    justifyContent: 'center', 
-    alignItems: 'center'
+    width: '100%',
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   bannerImage: {
-    width: '100%', 
+    width: '100%',
     height: '100%',
-    resizeMode: 'cover'
+    resizeMode: 'cover',
   },
   sectionTitleContainer: {
     marginVertical: 16,
@@ -218,61 +241,47 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  viewMoreContainer: {
-    marginVertical: 16,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  viewMoreButton: {
-    padding: 5,
-  },
-  viewMoreText: {
-    color: 'black',
-    fontWeight: 'bold',
-  },
   productContainer: {
     margin: 10,
     width: (width / 2) - 20,
     alignItems: 'center',
     backgroundColor: '#ffffff',
     borderRadius: 8,
-    padding: 10
+    padding: 10,
   },
   productImage: {
     width: '100%',
     height: 150,
     borderRadius: 8,
-    resizeMode: 'contain'
+    resizeMode: 'contain',
   },
   productName: {
     fontWeight: 'bold',
     marginVertical: 5,
-    textAlign: 'center'
+    textAlign: 'center',
   },
   productPrice: {
-    textAlign: 'center'
+    textAlign: 'center',
   },
   buttonContainer: {
     flexDirection: 'column',
     justifyContent: 'center',
-    marginTop: 10
+    marginTop: 10,
   },
   detailButton: {
     backgroundColor: '#f8c471',
     padding: 10,
     borderRadius: 5,
-    marginBottom: 5
+    marginBottom: 5,
   },
   cartButton: {
     backgroundColor: '#f8c471',
     padding: 10,
-    borderRadius: 5
+    borderRadius: 5,  
   },
   buttonText: {
     textAlign: 'center',
     color: '#fff',
-    fontWeight: 'bold'
-  }
+    fontWeight: 'bold',
+  },
 });
