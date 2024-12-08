@@ -13,7 +13,7 @@ const FoodProductPage: React.FC = () => {
     <View style={styles.container}>
       {/* Ảnh sản phẩm */}
       <Image
-        source={require('../../assets/images/food/hamburger.jpg')}
+        source={require('../../assets/images/food/hamburger.jpg')}    
         style={styles.productImage}
       />
 
