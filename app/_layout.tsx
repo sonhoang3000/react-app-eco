@@ -27,7 +27,7 @@ export default function RootLayout() {
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen
-        name="Products_page"
+        name="Products_page/[id]"
         options={{ headerShown: false }}
       />{" "}
       {/*Trang Products*/}

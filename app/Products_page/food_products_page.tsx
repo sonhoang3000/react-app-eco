@@ -1,62 +1,73 @@
-import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
-const FoodProductPage: React.FC = () => {
-  const [quantity, setQuantity] = useState(1);
+interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+}
 
-  const handleAddToCart = () => {
-    // Xử lý thêm vào giỏ hàng
-    console.log('Sản phẩm đã được thêm vào giỏ hàng');
-  };
+const ProductDetailScreen: React.FC = () => {
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const { id } = useLocalSearchParams(); // Lấy ID sản phẩm từ URL params
+
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      setLoading(true); // Đảm bảo trạng thái loading được đặt lại mỗi khi id thay đổi
+      try {
+        const response = await fetch(`http://192.168.231.117:8080/api/get-product-detail?id=${id}`);
+        const data = await response.json();
+        if (data.errCode === 0) {
+          setProduct(data.product);
+        } else {
+          console.error('Product not found.');
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchProductDetails();
+    }
+
+  }, [id]); // Chạy lại khi id thay đổi
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#f8c471" />
+      </View>
+    );
+  }
+
+  if (!product) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Product not found.</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.buttonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* Ảnh sản phẩm */}
-      <Image
-        source={require('../../assets/images/food/hamburger.jpg')}    
-        style={styles.productImage}
-      />
-
-      {/* Thông tin sản phẩm */}
-      <View style={styles.productInfo}>
-        <Text style={styles.productTitle}>Hamburger</Text>
-        <Text style={styles.productPrice}>9.999.999đ</Text>
-         {/* Số lượng */}
-         <View style={styles.quantityControl}>
-          <TouchableOpacity onPress={() => setQuantity(quantity - 1)} style={styles.quantityButton}>
-            <Text style={styles.quantityButtonText}>-</Text>
-          </TouchableOpacity>
-          <Text style={styles.quantityText}>{quantity}</Text>
-          <TouchableOpacity onPress={() => setQuantity(quantity + 1)} style={styles.quantityButton}>
-            <Text style={styles.quantityButtonText}>+</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.deliveryInfo}>
-          <Text style={styles.deliveryTime}>15mins</Text>
-          <Text style={styles.reviewCount}>32+ Review</Text>
-          <Text style={styles.rating}>4.2 Ratings</Text>
-        </View>
-
-        {/* Thêm nguyên liệu */}
-        <Text style={styles.extraIngredientText}>Add extra Ingredient</Text>
-        <TextInput
-          style={styles.extraIngredientInput}
-          placeholder="Enter extra ingredient"
-        />
-
-        {/* Mô tả sản phẩm */}
-        <Text style={styles.productDescription}>
-          Với hương vị độc đáo và cách chế biến tinh tế, hamburger đã được nhiều bạn trẻ Việt Nam tìm đến và tận
-          hưởng niềm vui bởi vị ngon của nó
-        </Text>
-
-        {/* Nút thêm vào giỏ hàng */}
-        <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
-          <Text style={styles.addToCartButtonText}>Add to cart</Text>
-        </TouchableOpacity>
-
-       
-      </View>
+      <Image source={{ uri: product.image }} style={styles.productImage} />
+      <Text style={styles.productName}>{product.name}</Text>
+      <Text style={styles.productDescription}>{product.description}</Text>
+      <Text style={styles.productPrice}>${product.price.toFixed(2)}</Text>
+      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <Text style={styles.buttonText}>Back to Products</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -64,101 +75,61 @@ const FoodProductPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 15,
-    justifyContent: 'center',  // Căn giữa theo chiều dọc
-    alignItems: 'center',  // Căn giữa theo chiều ngang
+    padding: 16,
+    backgroundColor: '#f39c12',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f39c12',
   },
   productImage: {
-    width: '100%',  // Chiếm toàn bộ chiều rộng của phần tử cha
-    height: undefined,  // Để chiều cao tự động tính theo aspectRatio
-    aspectRatio: 1,  // Đảm bảo tỷ lệ 1:1
-    borderRadius: 10,
+    width: 200,
+    height: 200,
+    borderRadius: 8,
     marginBottom: 20,
-    maxWidth: 400,  // Giới hạn chiều rộng tối đa là 200px
-    maxHeight: 400,  // Giới hạn chiều cao tối đa là 200px
   },
-  productInfo: {
-    padding: 15,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-  },
-  productTitle: {
-    fontSize: 22,
+  productName: {
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#34495e',
+    textAlign: 'center',
+  },
+  productDescription: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    marginVertical: 10,
+    textAlign: 'center',
   },
   productPrice: {
     fontSize: 18,
-    color: '#ff6347',
-    marginTop: 5,
+    fontWeight: 'bold',
+    color: '#e74c3c',
+    marginBottom: 20,
   },
-  deliveryInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 10,
-  },
-  deliveryTime: {
-    fontSize: 14,
-    color: '#888',
-  },
-  reviewCount: {
-    fontSize: 14,
-    color: '#888',
-  },
-  rating: {
-    fontSize: 14,
-    color: '#ff6347',
-  },
-  extraIngredientText: {
-    fontSize: 16,
-    marginTop: 10,
-    marginBottom: 5,
-  },
-  extraIngredientInput: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
+  backButton: {
+    backgroundColor: '#d35400',
     padding: 10,
-  },
-  productDescription: {
-    fontSize: 14,
-    color: '#555',
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  addToCartButton: {
-    backgroundColor: '#ff6347',
-    padding: 15,
-    borderRadius: 10,
+    borderRadius: 5,
     alignItems: 'center',
-    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
+    elevation: 5,
   },
-  addToCartButtonText: {
+  buttonText: {
     color: '#fff',
-    fontSize: 18,
     fontWeight: 'bold',
   },
-  quantityControl: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+  errorText: {
+    fontSize: 18,
+    color: '#e74c3c',
     marginBottom: 20,
-  },
-  quantityButton: {
-    backgroundColor: '#f0f0f0',
-    padding: 10,
-    borderRadius: 50,
-    marginHorizontal: 10,
-  },
-  quantityButtonText: {
-    fontSize: 18,
-    color: '#333',
-  },
-  quantityText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
   },
 });
 
-export default FoodProductPage;
+export default ProductDetailScreen;

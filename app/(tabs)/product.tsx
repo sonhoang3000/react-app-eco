@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, FlatList, Text, Image, StyleSheet, ActivityIndicator, TouchableOpacity, TextInput } from 'react-native';
+import { router } from 'expo-router';
 
 interface Product {
   _id: string;
@@ -65,6 +66,8 @@ const ProductScreen: React.FC = () => {
 
   const handleViewDetails = (item: Product) => {
     console.log(`Xem chi tiết sản phẩm: ${item.name}`);
+    router.push(`/productDetail?id=${item._id}`);
+
   };
 
   const handleAddToCart = (item: Product) => {
