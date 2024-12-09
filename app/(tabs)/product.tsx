@@ -18,7 +18,7 @@ const ProductScreen: React.FC = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('http://172.168.98.89:8080/api/get-all-product?id=ALL'); // Tải tất cả sản phẩm
+        const response = await fetch('http://192.168.10.49:8080/api/get-all-product?id=ALL'); // Tải tất cả sản phẩm
         const data = await response.json();
         if (data.errCode === 0) {
           setProducts(data.products);
@@ -66,8 +66,8 @@ const ProductScreen: React.FC = () => {
 
   const handleViewDetails = (item: Product) => {
     console.log(`Xem chi tiết sản phẩm: ${item.name}`);
-    router.push(`/productDetail?id=${item._id}`);
-
+    const productId = item._id;
+    router.push(`/Products_page/${productId}`);
   };
 
   const handleAddToCart = (item: Product) => {

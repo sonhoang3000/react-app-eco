@@ -26,10 +26,8 @@ export default function RootLayout() {
     <Stack>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="Products_page/[id]"
-        options={{ headerShown: false }}
-      />{" "}
+      <Stack.Screen name="Products_page/[id]" options={{ headerShown: true, title: "Product Details" }} />
+
       {/*Trang Products*/}
       <Stack.Screen
         name="(user)/update-profile"
