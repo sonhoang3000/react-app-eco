@@ -8,6 +8,18 @@ const userRegister = (formData: {
   name: String;
   password: String;
 }) => {
-  return axios.post(`/api/register`, formData);
+  return axios.post(`/api/register`, { ...formData, phoneNumber: "0123456" });
 };
-export { userLogin, userRegister };
+const updateProfile = (formData: {
+  email?: string;
+  name?: string;
+  phoneNumber?: string;
+  password?: string;
+  id: string;
+}) => {
+  return axios.put(`/api/update-user`, formData);
+};
+const getOrderHistoryByUser = (userId: string) => {
+  return axios.get(`/api/get-order-user/${userId}`);
+};
+export { userLogin, userRegister, updateProfile, getOrderHistoryByUser };

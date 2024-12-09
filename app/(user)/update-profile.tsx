@@ -7,41 +7,74 @@ import {
   TouchableOpacity,
   Image,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 import { FontAwesome } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { userType } from "@/utils/dataType";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import { updateProfile } from "@/services/userService";
+import Toast from "react-native-toast-message";
 
 const UpdateProfileScreen = () => {
   const [user, setUser] = useState<userType>();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [gender, setGender] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleDateChange = (
-    event: DateTimePickerEvent,
-    selectedDate: Date | undefined
-  ) => {
-    const currentDate = selectedDate || dateOfBirth;
-    setShowDatePicker(false);
-    setDateOfBirth(currentDate);
-  };
   useEffect(() => {
     const fetchUser = async () => {
       const storedUser = await AsyncStorage.getItem("user");
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setName(parsedUser.name || "");
+        setPhone(parsedUser.phoneNumber || "");
       }
     };
     fetchUser();
   }, []);
+
+  const handleUpdateProfile = async () => {
+    if (password !== confirmPassword) {
+      Toast.show({
+        type: "error",
+        text1: "Mật khẩu không khớp",
+      });
+      return;
+    }
+
+    const res = (await updateProfile({
+      email: user?.email,
+      name: name.trim() !== "" ? name : user?.name,
+      phoneNumber: phone.trim() !== "" ? phone : user?.phoneNumber,
+      password: password.trim() !== "" ? password : undefined,
+      id: String(user?.id),
+    })) as any;
+
+    if (res) {
+      if (user) {
+        setUser({
+          ...user,
+          name: name.trim() !== "" ? name : user.name,
+          phoneNumber: phone.trim() !== "" ? phone : user?.phoneNumber,
+        });
+        await AsyncStorage.setItem(
+          "user",
+          JSON.stringify({
+            ...user,
+            name: name.trim() !== "" ? name : user.name,
+            phoneNumber: phone.trim() !== "" ? phone : user?.phoneNumber,
+          })
+        );
+        Toast.show({
+          type: "success",
+          text1: "Cập nhật thông tin thành công",
+        });
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -80,41 +113,30 @@ const UpdateProfileScreen = () => {
           />
         </View>
 
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={gender}
-            onValueChange={(itemValue) => setGender(itemValue)}
-            style={styles.picker}
-          >
-            <Picker.Item label="Select your gender" value="" />
-            <Picker.Item label="Male" value="male" />
-            <Picker.Item label="Female" value="female" />
-          </Picker>
-        </View>
+        <TextInput
+          style={[styles.input, { marginBottom: 15 }]}
+          placeholder="Enter your password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
 
-        <TouchableOpacity
-          style={styles.datePicker}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Text style={styles.dateText}>
-            {dateOfBirth.toDateString() === "Invalid Date"
-              ? "What is your date of birth?"
-              : dateOfBirth.toDateString()}
-          </Text>
-        </TouchableOpacity>
-        {showDatePicker && (
-          <DateTimePicker
-            value={dateOfBirth}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-          />
-        )}
+        <TextInput
+          style={styles.input}
+          placeholder="Confirm your password"
+          secureTextEntry
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+        />
       </View>
 
-      <TouchableOpacity style={styles.updateButton}>
+      <TouchableOpacity
+        style={styles.updateButton}
+        onPress={handleUpdateProfile}
+      >
         <Text style={styles.updateButtonText}>Update Profile</Text>
       </TouchableOpacity>
+      <Toast />
     </SafeAreaView>
   );
 };
@@ -187,29 +209,6 @@ const styles = StyleSheet.create({
   phoneInput: {
     flex: 1,
     borderWidth: 0,
-  },
-  pickerContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    marginBottom: 15,
-  },
-  picker: {
-    height: 50,
-    width: "100%",
-  },
-  datePicker: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    marginBottom: 15,
-  },
-  dateText: {
-    fontSize: 14,
-    color: "#999",
   },
   updateButton: {
     backgroundColor: "#C97A54",
